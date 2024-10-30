@@ -6,10 +6,10 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"framework/logger"
 	"image"
 	"image/png"
 	"io"
-	"log"
 	"net/http"
 	"net/url"
 	"os/exec"
@@ -68,7 +68,7 @@ func (c *HTTPCli) Get(ctx context.Context, urll string, params map[string]string
 		return err
 	}
 
-	log.Println("[get] result: ", string(result))
+	logger.Debugf("[get] result: ", string(result))
 
 	err = json.Unmarshal(result, &respbody)
 	if err != nil {
@@ -162,7 +162,7 @@ func (c *HTTPCli) Post(ctx context.Context, urll string, reqbody interface{}, re
 	if err != nil {
 		return err
 	}
-	log.Println("[post] result: ", string(result))
+	logger.Debugf("[post] result: ", string(result))
 
 	if len(result) != 0 && respbody != nil {
 		err = json.Unmarshal(result, &respbody)
@@ -202,7 +202,7 @@ func (c *HTTPCli) httpInner(ctx context.Context, method, url string, body interf
 	if err != nil {
 		return nil, err
 	}
-	log.Printf("[http-req] body: %+v\n", bodyBuffer.String())
+	logger.Debugf("[http-req] body: %+v\n", bodyBuffer.String())
 
 	c.req, err = http.NewRequestWithContext(ctx, method, url, bodyBuffer)
 	if err != nil {

@@ -4,8 +4,8 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"framework/logger"
 	"io"
-	"log"
 	"mime/multipart"
 	"net/http"
 	"os"
@@ -139,7 +139,7 @@ func uploadFileWithCache(ctx context.Context, fileBytes []byte, fileName, mimeTy
 
 	err = uploadCacher.SaveCache(fileBytes, ossURL)
 	if err != nil {
-		log.Printf("save upload cache error: %v\n", err)
+		logger.Debugf("save upload cache error: %v\n", err)
 		return "", err
 	}
 

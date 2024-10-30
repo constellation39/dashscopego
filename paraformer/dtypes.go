@@ -19,16 +19,15 @@ type Request struct {
 	StreamingFn StreamingFunc `json:"-"`
 }
 
-func NewRequest(payloadIn PayloadIn, streamingFn StreamingFunc) Request {
+func NewRequest(payloadIn PayloadIn) Request {
 	headerPara := ReqHeader{
 		Streaming: "duplex",
 		TaskID:    GenerateTaskID(),
 		Action:    "run-task",
 	}
 	return Request{
-		Header:      headerPara,
-		Payload:     payloadIn,
-		StreamingFn: streamingFn,
+		Header:  headerPara,
+		Payload: payloadIn,
 	}
 }
 
@@ -47,11 +46,12 @@ type PayloadIn struct {
 	Function   string                 `json:"function"`
 }
 
-func NewRealTimePayloadIn(parameters Parameters, input map[string]interface{}) PayloadIn {
+func NewRealTimePayloadIn(model ModelParaformer, parameters Parameters, input map[string]interface{}) PayloadIn {
 	if input == nil {
 		input = make(map[string]interface{})
 	}
 	return PayloadIn{
+		Model:      model,
 		Parameters: parameters,
 		Input:      input,
 		Task:       "asr",

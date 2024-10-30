@@ -2,7 +2,7 @@ package paraformer
 
 import (
 	"context"
-	"log"
+	"framework/logger"
 	"net/http"
 	"strings"
 
@@ -28,7 +28,7 @@ func ConnRecognitionClient(request *Request, token string) (*httpclient.WsClient
 
 func CloseRecognitionClient(cli *httpclient.WsClient) error {
 	if err := cli.CloseClient(); err != nil {
-		log.Printf("close client error: %v", err)
+		logger.Debugf("close client error: %v", err)
 		return err
 	}
 
@@ -52,29 +52,29 @@ BREAK_FOR:
 		select {
 		case output, ok := <-outputChan:
 			if !ok {
-				log.Println("outputChan is closed")
+				logger.Debugf("outputChan is closed")
 				break BREAK_FOR
 			}
 
 			// streaming callback func
 			if err := fn(ctx, output.Data); err != nil {
-				log.Println("error: ", err)
+				logger.Errorf("error: ", err)
 				break BREAK_FOR
 			}
 
 		case err := <-errChan:
 			if err != nil {
-				log.Println("error: ", err)
+				logger.Errorf("error: ", err)
 				break BREAK_FOR
 			}
 		case <-ctx.Done():
 			cli.Over = true
-			log.Println("Done")
+			logger.Debugf("Done")
 			break BREAK_FOR
 		}
 	}
 
-	log.Println("get recognition result...over")
+	logger.Debugf("get recognition result...over")
 }
 
 // task_id length 32.

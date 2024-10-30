@@ -3,7 +3,7 @@ package wanx
 import (
 	"context"
 	"errors"
-	"log"
+	"framework/logger"
 	"time"
 
 	httpclient "github.com/devinyf/dashscopego/httpclient"
@@ -74,10 +74,10 @@ func SyncCall(ctx context.Context, baseURL string, req *ImageSynthesisRequest, h
 		currentTaskStatus == TaskRunning ||
 		currentTaskStatus == TaskSuspended {
 		delayDurationToCheckStatus := 800
-		log.Println("TaskStatus: ", currentTaskStatus)
+		logger.Debugf("TaskStatus: ", currentTaskStatus)
 		time.Sleep(time.Duration(delayDurationToCheckStatus) * time.Millisecond)
 
-		// log.Println("TaskStatus: ", currentTaskStatus)
+		// logger.Debugf("TaskStatus: ", currentTaskStatus)
 		taskResp, err = CheckTaskStatus(ctx, baseURL, &taskReq, httpcli, options...)
 		if err != nil {
 			return nil, err

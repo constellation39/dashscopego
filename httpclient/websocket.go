@@ -3,6 +3,7 @@ package httpclient
 import (
 	"context"
 	"encoding/json"
+	"framework/logger"
 	"log"
 	"net/http"
 	"time"
@@ -48,7 +49,7 @@ func (c *WsClient) ConnClient(req interface{}) error {
 
 	err, ok := <-c.errChan
 	if ok && err != nil {
-		log.Println("errChain error: ", err)
+		logger.Errorf("errChain error: ", err)
 	}
 	return nil
 }
@@ -72,7 +73,11 @@ func (c *WsClient) SendBinaryDates(data []byte) {
 		Data: data,
 	}
 
-	c.inputChan <- streamInput
+	select {
+	case c.inputChan <- streamInput:
+	case <-time.After(time.Second):
+		logger.Warn("send binary data timeout")
+	}
 }
 
 func (c *WsClient) ResultChans() (<-chan WsMessage, <-chan error) {
@@ -121,20 +126,20 @@ func (c *WsClient) readPump() {
 
 	c.Conn.SetReadLimit(maxMessageSize)
 	if err := c.Conn.SetReadDeadline(pongDelay); err != nil {
-		log.Printf("SetReadDeadline error: %v", err)
+		logger.Debugf("SetReadDeadline error: %v", err)
 	}
 	c.Conn.SetPongHandler(pongFn)
 	for !c.Over {
 		_, message, err := c.Conn.ReadMessage()
 		if err != nil {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("ReadMessage error: %v", err)
+				logger.Debugf("ReadMessage error: %v", err)
 				c.errChan <- err
 			}
 			break
 		}
 
-		log.Println("ws output message: ", string(message))
+		logger.Debugf("ws output message: ", string(message))
 		c.outputChan <- WsMessage{
 			Type: websocket.TextMessage,
 			Data: message,
@@ -149,7 +154,7 @@ func (c *WsClient) readPump() {
 //
 //nolint:cyclop
 func (c *WsClient) writePump() {
-	defer log.Println("ws write over")
+	defer logger.Debugf("ws write over")
 	ticker := time.NewTicker(pingPeriod)
 	defer func() {
 		ticker.Stop()
@@ -162,22 +167,22 @@ func (c *WsClient) writePump() {
 				// The write channel is closed.
 				err := c.Conn.WriteMessage(websocket.CloseMessage, []byte{})
 				if err != nil {
-					log.Printf("WriteMessage error: %v", err)
+					logger.Debugf("WriteMessage error: %v", err)
 				}
 				return
 			}
 			err := c.Conn.SetWriteDeadline(time.Now().Add(writeWait))
 			if err != nil {
-				log.Printf("SetWriteDeadline error: %v", err)
+				logger.Debugf("SetWriteDeadline error: %v", err)
 			}
 
 			// TODO: 临时输出
 			if message.Type == websocket.TextMessage {
-				log.Printf("ws TextMessage: %v\n", string(message.Data))
+				logger.Debugf("ws TextMessage: %v\n", string(message.Data))
 			}
 
 			if err := c.Conn.WriteMessage(message.Type, message.Data); err != nil {
-				log.Println("err in write message: ", err)
+				logger.Errorf("err in write message: ", err)
 				c.errChan <- err
 				return
 			}
@@ -205,8 +210,8 @@ func (c *WsClient) connect() error {
 	defer resp.Body.Close()
 
 	c.Conn = conn
-	c.inputChan = make(chan WsMessage, 100)
-	c.outputChan = make(chan WsMessage, 100)
+	c.inputChan = make(chan WsMessage)
+	c.outputChan = make(chan WsMessage)
 	c.errChan = make(chan error, 1)
 	go c.writePump()
 	go c.readPump()
