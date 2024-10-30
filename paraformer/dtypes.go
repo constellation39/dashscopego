@@ -1,6 +1,8 @@
 package paraformer
 
-import "context"
+import (
+	"context"
+)
 
 type Parameters struct {
 	SampleRate               int      `json:"sample_rate"`
@@ -17,6 +19,19 @@ type Request struct {
 	StreamingFn StreamingFunc `json:"-"`
 }
 
+func NewRequest(payloadIn PayloadIn, streamingFn StreamingFunc) Request {
+	headerPara := ReqHeader{
+		Streaming: "duplex",
+		TaskID:    GenerateTaskID(),
+		Action:    "run-task",
+	}
+	return Request{
+		Header:      headerPara,
+		Payload:     payloadIn,
+		StreamingFn: streamingFn,
+	}
+}
+
 type ReqHeader struct {
 	Streaming string `json:"streaming"`
 	TaskID    string `json:"task_id"`
@@ -30,6 +45,19 @@ type PayloadIn struct {
 	Task       string                 `json:"task"`
 	TaskGroup  string                 `json:"task_group"`
 	Function   string                 `json:"function"`
+}
+
+func NewRealTimePayloadIn(parameters Parameters, input map[string]interface{}) PayloadIn {
+	if input == nil {
+		input = make(map[string]interface{})
+	}
+	return PayloadIn{
+		Parameters: parameters,
+		Input:      input,
+		Task:       "asr",
+		TaskGroup:  "audio",
+		Function:   "recognition",
+	}
 }
 
 // ---------
